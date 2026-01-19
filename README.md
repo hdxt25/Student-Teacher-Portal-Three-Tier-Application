@@ -77,3 +77,57 @@ Before you begin, ensure that you have the following installed:
 Data persistence is ensured by using Docker volumes. If the MySQL container is deleted, data remains available and is automatically added to a new Docker container by providing the same Docker volume.
 
 Feel free to explore and modify the Dockerfiles to enhance your understanding of containerization and deployment! Happy coding! 🚀
+-----------------------------------------------------------------------------------------
+sudo yum update -y
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo yum install -y nodejs git
+sudo npm install -g pm2   # PM2 (Process Manager for Node.js) run process in background
+
+#verify installation
+node -v
+pm2 -v
+
+git clone <http_code> --branch two-tier-test
+cd backend/
+
+# install all packages
+npm install
+
+# run backend in background process
+pm2 start server.js --name myapp
+ss -tlnp        # check 3500 is present.
+
+# now we have to start server when ec2 boots up
+pm2 save
+pm2 startup       # it will provide 1 command -> copy it and paste it on terminal and run. ("sudo env _____")
+pm2 save
+------------------------------------
+cd frontend/
+npm install
+npm run build       # it produces /build folder
+
+# now we use nginx to host our application.
+sudo yum install nginx -y
+
+# now we have to copy all files of "build" folder at 1 location .
+sudo mkdir -p /var/www/frontend
+sudo cp -r build/*  /var/www/frontend
+ls /var/www/frontend   # verify copy
+
+# now we have to serve "/var/www/frontend" by nginx .
+ss -tlnp       # nginx port is visible or not.
+systemctl status nginx  # nginx is not working 
+sudo systemctl enable nginx
+sudo systemctl restart nginx
+systemctl status nginx   # nginx is working now
+ss -tlnp   # check nginx is working on Port 80
+curl localhost  # verify nginx is shoing our content
+
+sudo vi /etc/nginx/conf.d/nginx.conf
+
+
+
+
+
+
+
