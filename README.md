@@ -124,7 +124,29 @@ ss -tlnp   # check nginx is working on Port 80
 curl localhost  # verify nginx is shoing our content
 
 sudo vi /etc/nginx/conf.d/nginx.conf
+server {
+    listen 80 default_server;
+    server_name two-tier.hdxtdevops.win;
 
+    root /var/www/frontend;
+    index index.html;
+
+    location ^~ /api/ {
+        proxy_pass http://127.0.0.1:3500/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        proxy_pass_request_body on;
+        proxy_set_header Content-Length $content_length;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}
 
 
 
