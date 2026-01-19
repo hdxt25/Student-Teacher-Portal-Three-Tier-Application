@@ -78,6 +78,13 @@ Data persistence is ensured by using Docker volumes. If the MySQL container is d
 
 Feel free to explore and modify the Dockerfiles to enhance your understanding of containerization and deployment! Happy coding! 🚀
 -----------------------------------------------------------------------------------------
+## How to deploy Three Tier Mern App in Two Tier Infra ->
+Step 1) Create VPC, Nat Gateway, Edit Route of Private subnets.
+Step 2) Create 3 Security Groups -> ALB, EC2, RDS
+Step 3) Go To RDS -> Create Subnet Group & Create RDS Database instance.
+Step 4) Create EC2 instance with t3.medium, two-tier vpc, public subnet, security group inbound rules -> 
+22 from My IP,80 from My IP 
+
 sudo yum update -y
 curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
 sudo yum install -y nodejs git
@@ -90,14 +97,14 @@ pm2 -v
 git clone <http_code> --branch two-tier-test
 cd backend/
 
-# install all packages
+#install all packages
 npm install
 
-# run backend in background process
+#run backend in background process
 pm2 start server.js --name myapp
 ss -tlnp        # check 3500 is present.
 
-# now we have to start server when ec2 boots up
+#now we have to start server when ec2 boots up
 pm2 save
 pm2 startup       # it will provide 1 command -> copy it and paste it on terminal and run. ("sudo env _____")
 pm2 save
@@ -106,15 +113,15 @@ cd frontend/
 npm install
 npm run build       # it produces /build folder
 
-# now we use nginx to host our application.
+#now we use nginx to host our application.
 sudo yum install nginx -y
 
-# now we have to copy all files of "build" folder at 1 location .
+#now we have to copy all files of "build" folder at 1 location .
 sudo mkdir -p /var/www/frontend
 sudo cp -r build/*  /var/www/frontend
 ls /var/www/frontend   # verify copy
 
-# now we have to serve "/var/www/frontend" by nginx .
+#now we have to serve "/var/www/frontend" by nginx .
 ss -tlnp       # nginx port is visible or not.
 systemctl status nginx  # nginx is not working 
 sudo systemctl enable nginx
@@ -125,8 +132,8 @@ curl localhost  # verify nginx is shoing our content
 
 sudo vi /etc/nginx/conf.d/nginx.conf
 server {
-    listen 80 default_server;
-    server_name two-tier.hdxtdevops.win;
+    listen 80 default_server;                     
+    server_name two-tier.hdxtdevops.win;               # server_name _;    ---->  if we have no domain.
 
     root /var/www/frontend;
     index index.html;
@@ -147,6 +154,108 @@ server {
         try_files $uri /index.html;
     }
 }
+
+--
+#verify nginx syntax is OK or Not.
+nginx -t
+systemctl reload nginx.service   #always reload ngins after changing configuration files.
+
+---------
+#now check nginx is showing our static files or not
+Go to EC2 security group -> open Port 80 from My Ip.
+Go to Browser -> http://<public-ip-ec2>
+
+----------
+Step 5) Now we create AMI Image of this ec2 instance .
+Go to EC2 -> Actions -> Image and Templates -> Create Image
+
+Name -> two-tier-ami-fe-be
+Check on Reboot Instance
+Create Image
+-------------
+Step 6) Now Create LAUNCH TEMPLATE for AUTO SCALING GROUP ->
+name -> two-tier-lt
+AMI -> Owned by Me -> two-tier-ami-fe-be
+Instance Type -> t3.medium
+Security Group -> two-tier-ec2
+vpc -> two-tier-vpc
+
+ADVANCED DETAILS -
+IAM Instance profile -> SSMManagedInstanced-Role         # this is very important otherwise backend breaks
+Create Launch Template
+--------------
+Step 7) Create Load Balancer.
+Create Target Group first ->
+Goto Target Group.
+Instances
+name -> two-tier-tg
+HTTP 80
+vpc -> two-tier-vpc
+Next
+Next
+Create Target Group
+
+
+Go to ALB -> 
+name -> two-tier-lb
+internet-facing
+vpc -> two-tier-vpc
+az -> select pub subnets only
+Port 80
+Target Group -> two-tier-tg
+Create ALB Load Balancer
+---------------
+Step 8) Create Auto Scaling Group
+name -> two-tier-asgname 
+launch template -> two-tier-lt
+Next
+vpc -> two-tier-vpc
+subnets -> select private subnets only
+Next
+Attach to Existing Load Balancer
+Target Group -> two-tier-tg
+Next
+Desired capacity - 1
+Min - 1
+Max - 5
+
+Select Traget Tracking scaling Policy
+Avg CPU Utilisation
+50
+Next
+Next
+Create ASG
+---------------------------
+Copy Load Balancer DNS & open on Browser (Open Port 80, 443 in ALB Security Group)
+--------------------------
+Step 9 ) Integrate CDN, WAF, ASM, Route53 now.
+Go to ALB -> load balancer -> integration -> Manage Cloud Front + waf integration
+Check on box
+Click on Add Distribution
+Apply
+----
+Open ACM -> Create public Certificate -> hdxtdevops.win *.two-tier.hdxtdevops.win
+Save
+-----
+Open Cloud Front.
+Select Distribution
+Add Domain  -> two-tier.hdxtdevops.win
+ACM certificates will show here.
+Click on Add Distribution.
+Now Open Application via Distribution Domain Name.
+--------
+Disable Port 80 Inbound in ALB Security Group.
+------
+Go to CloudFair ->
+CNAME -> two-tier   -> <cloudfront-distribution-domain>.net
+------------
+
+
+
+
+
+
+
 
 
 
