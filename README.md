@@ -239,7 +239,9 @@ Check on box
 Click on Add Distribution
 Apply
 ----
-Open ACM -> Create public Certificate -> hdxtdevops.win *.two-tier.hdxtdevops.win
+Open ACM -> Create public Certificate -> 
+hdxtdevops.win 
+*.hdxtdevops.win
 Save
 -----
 Open Cloud Front.
