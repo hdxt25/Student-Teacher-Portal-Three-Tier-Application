@@ -79,10 +79,15 @@ Data persistence is ensured by using Docker volumes. If the MySQL container is d
 Feel free to explore and modify the Dockerfiles to enhance your understanding of containerization and deployment! Happy coding! 🚀
 -----------------------------------------------------------------------------------------
 ## How to deploy Three Tier Mern App in Two Tier Infra ->
-Step 1) Create VPC, Nat Gateway, Edit Route of Private subnets.
-Step 2) Create 3 Security Groups -> ALB, EC2, RDS
-Step 3) Go To RDS -> Create Subnet Group & Create RDS Database instance.
-Step 4) Create EC2 instance with t3.medium, two-tier vpc, public subnet, security group inbound rules -> 
+Step 1) Create VPC (two-tier-vpc), Nat Gateway (two-tier-ngw), Edit Route of Private subnets.
+Step 2) Create 3 Security Groups -> ALB (two-tier-sg-alb), EC2 (two-tier-sg-ec2), RDS (two-tier-sg-rds)
+
+      alb ( Allow All Port: 443 && with 0.0.0.0/0)
+      ec2 ( Allow Alb Port: 80,443,22,3500 && with (two-tier-sg-alb))
+      rds ( Allow Ec2 Port: 3306 && with (two-tier-sg-ec2))
+
+Step 3) Go To RDS -> Create Subnet Group (two-tier-rds-subnet-group) & Create RDS Database instance.
+Step 4) Create EC2 instance with t3.medium, two-tier vpc, public subnet, security group inbound rules ((two-tier-sg-ec2), default) -> 
 22 from My IP,80 from My IP 
 
 sudo yum update -y
